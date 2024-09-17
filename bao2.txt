@@ -26,3 +26,62 @@ def param4 = (accu1: Int, accu2: Int) => accu1 + accu2
 
 // Aggregate example with inputRDD
 println("aggregate : " + inputRDD.aggregate(0)(param3, param4))
+
+// Phương pháp 2: treeAggregate – action
+
+def param8= (accu:Int, v:Int) => accu + v
+
+def param9= (accu1:Int, accu2:Int) => accu1 + accu2
+
+println("treeAggregate : " + listRdd.treeAggregate(0)(param8, param9))
+
+// Phương pháp 3: fold – action
+
+// fold
+println("fold : "+listRdd.fold(0){(acc,v) =>
+  val sum = acc+v
+  sum
+})
+// Output: fold : 20
+
+println("fold : "+inputRDD.fold(("Total",0)){(acc:(String,Int),v:(String,Int))=>
+  val sum = acc._2 + v._2
+  ("Total",sum)
+})
+// Output: fold : (Total,181)
+
+// min
+println("min : "+listRdd.min())
+// Output: min : 1
+
+println("min : "+inputRDD.min())
+// Output: min : (A,20)
+
+// max
+println("max : "+listRdd.max())
+// Output: max : 5
+
+println("max : "+inputRDD.max())
+// Output: max : (Z,1)
+
+
+// Bài 3. Loại các từ trùng nhau trong list
+
+val spark = SparkSession.builder()
+  .appName("SparkByExample")
+  .master("local")
+  .getOrCreate()
+
+val rdd = spark.sparkContext.parallelize(
+  List("Germany India USA","USA India Russia","India Brazil Canada China")
+)
+
+val wordsRdd = rdd.flatMap(_.split(" "))
+val pairRDD = wordsRdd.map((_,1))
+
+pairRDD.foreach(println)
+
+// Bài 4: Đọc file txt, đọc file json, file xml
+
+val multiline_df = spark.read.option("multiline","true").json("src/b.json")
+multiline_df.show(false)
