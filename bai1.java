@@ -66,3 +66,25 @@ pairRDD.foreach(println)
 
 val multiline_df = spark.read.option("multiline","true").json("src/b.json")
 multiline_df.show(false)
+
+
+
+import org.apache.spark.sql.SparkSession
+
+// Create a SparkSession
+val spark = SparkSession.builder()
+  .appName("SparkByExample")
+  .master("local")
+  .getOrCreate()
+
+// Create an RDD
+val rdd = spark.sparkContext.parallelize(
+  List("Germany India USA", "USA India Russia", "India Brazil Canada China")
+)
+
+// Perform transformations
+val wordsRdd = rdd.flatMap(_.split(" "))
+val pairRDD = wordsRdd.map((_, 1))
+
+// Print results
+pairRDD.foreach(println)
