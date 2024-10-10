@@ -41,3 +41,65 @@ pandas_df.plot(x='Month',
 plt.title("The Sum Delays for Each Month from 1987 to 1996")
 plt.ylabel("Hours")
 plt.show()
+
+
+
+# Chọn các cột cần thiết và thêm cột tính tổng delay (ArrDelay + DepDelay)
+dataset_selected = dataset_raw.select("Month", "ArrDelay", "DepDelay") \
+                              .withColumn("SumDelay", col("ArrDelay") + col("DepDelay"))
+
+# Group by theo tháng
+grouped_data = dataset_selected.groupBy("Month") \
+                               .agg(sum("ArrDelay").alias("TotalArrDelay"),
+                                    sum("DepDelay").alias("TotalDepDelay"),
+                                    sum("SumDelay").alias("TotalSumDelay"))
+
+# Hiển thị dữ liệu sau khi group by
+grouped_data.show()
+
+
+dataset_raw = LOAD '/home/hadoopuser/Desktop/{1987,1988,1989,1990,1991,1992,1993,1994,1995,1996}.csv' 
+USING PigStorage(',') AS (Year:chararray, Month:chararray, DayofMonth:chararray,
+    DayOfWeek:chararray, DepTime:chararray, CRSDepTime:chararray, ArrTime:chararray,
+    CRSArrTime:chararray, UniqueCarrier:chararray, FlightNum:chararray, TailNum:chararray,
+    ActualElapsedTime:chararray, CRSElapsedTime:chararray, AirTime:chararray, ArrDelay:int, 
+    DepDelay:int, Origin:chararray, Dest:chararray, Distance:chararray, TaxiIn:chararray,
+    TaxiOut:chararray, Cancelled:chararray, CancellationCode:chararray, Diverted:chararray, 
+    CarrierDelay:chararray, WeatherDelay:chararray, NASDelay:chararray, 
+    SecurityDelay:chararray, LateAircraftDelay:chararray);
+
+records = FOREACH dataset_raw GENERATE Month, ArrDelay, DepDelay, (ArrDelay + DepDelay) AS SumDelay;
+grpd = GROUP records BY Month;
+
+top_delays = FOREACH grpd {
+    arr_delays = FILTER records BY ArrDelay > 0;
+    dep_delays = FILTER records BY DepDelay > 0;
+    sum_delays = FILTER records BY SumDelay > 0;
+    GENERATE group AS Month, SUM(arr_delays.ArrDelay) AS ArrDelay,
+    SUM(dep_delays.DepDelay) AS DepDelay, SUM(sum_delays.SumDelay) AS SumDelay;
+};
+
+
+import matplotlib.pyplot as plt
+import glob, os
+import pandas as pd
+
+# Read file
+all_rec = glob.glob(os.path.join("q3*", "part*"), recursive=True)
+dataframes = [pd.read_csv(f, sep=",", header=None) for f in all_rec]
+
+df = pd.concat(dataframes, ignore_index=True)
+df.columns = ['Month','Top Arrival Delay', 'Top Departure Delay', 'Top (Arrival Delay + Departure Delay)']
+
+# Convert minutes to hours
+for col in df.columns:
+    if col == 'Month':
+        continue
+    df[col] = [float(x)/60 for x in df[col]]
+
+# Plot
+df.plot(x='Month', y=['Top Arrival Delay', 'Top Departure Delay', 'Top (Arrival Delay + Departure Delay)'],
+        kind="line", style="-o", figsize=(15,5))
+
+ax.set_title("The Sum Delays for Each Month from 1987 to 1996")
+ax.set_ylabel('hour(s)')
