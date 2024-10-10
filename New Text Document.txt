@@ -1,0 +1,43 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sum
+
+# Tạo Spark session
+spark = SparkSession.builder.appName("FlightDelays").getOrCreate()
+
+# Đọc file CSV (lưu ý thay đổi đường dẫn đến thư mục của bạn)
+dataset_raw = spark.read.csv('/path/to/your/csv/files/{1987,1988,1989,1990,1991,1992,1993,1994,1995,1996}.csv', 
+                             header=True, inferSchema=True)
+
+# Chọn các cột cần thiết và tính tổng delay
+dataset_selected = dataset_raw.select("Month", "ArrDelay", "DepDelay") \
+                              .withColumn("SumDelay", col("ArrDelay") + col("DepDelay"))
+
+# Group by theo tháng và tính tổng delay cho mỗi tháng
+grouped_data = dataset_selected.groupBy("Month") \
+                               .agg(sum("ArrDelay").alias("TotalArrDelay"),
+                                    sum("DepDelay").alias("TotalDepDelay"),
+                                    sum("SumDelay").alias("TotalSumDelay"))
+
+# Hiển thị kết quả
+grouped_data.show()
+
+
+
+import matplotlib.pyplot as plt
+
+# Chuyển đổi dữ liệu từ Spark DataFrame sang Pandas DataFrame
+pandas_df = grouped_data.toPandas()
+
+# Chuyển đổi phút thành giờ
+pandas_df['TotalArrDelay'] = pandas_df['TotalArrDelay'] / 60
+pandas_df['TotalDepDelay'] = pandas_df['TotalDepDelay'] / 60
+pandas_df['TotalSumDelay'] = pandas_df['TotalSumDelay'] / 60
+
+# Vẽ biểu đồ
+pandas_df.plot(x='Month', 
+               y=['TotalArrDelay', 'TotalDepDelay', 'TotalSumDelay'],
+               kind='line', style='-o', figsize=(15,5))
+
+plt.title("The Sum Delays for Each Month from 1987 to 1996")
+plt.ylabel("Hours")
+plt.show()
