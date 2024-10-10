@@ -103,3 +103,41 @@ df.plot(x='Month', y=['Top Arrival Delay', 'Top Departure Delay', 'Top (Arrival 
 
 ax.set_title("The Sum Delays for Each Month from 1987 to 1996")
 ax.set_ylabel('hour(s)')
+
+
+===========================================================
+
+
+
+month_list = list(range(1, 13))
+base_color = 'blue'  # Màu cơ bản cho các tháng khác
+alt_color = 'red'    # Màu thay thế cho tháng đặc biệt (ví dụ tháng 6)
+colors = [base_color if month != 6 else alt_color for month in month_list]
+
+# Chuyển đổi từ phút sang giờ (nếu chưa làm)
+pandas_df['TotalArrDelay'] = pandas_df['TotalArrDelay'] / 60
+pandas_df['TotalDepDelay'] = pandas_df['TotalDepDelay'] / 60
+pandas_df['TotalSumDelay'] = pandas_df['TotalSumDelay'] / 60
+
+# Vẽ biểu đồ đường sử dụng Matplotlib
+plt.figure(figsize=(10, 6))
+
+for i, month in enumerate(month_list):
+    # Lọc dữ liệu cho từng tháng
+    month_data = pandas_df[pandas_df['Month'] == month]
+    
+    # Vẽ đường cho mỗi tháng với màu tương ứng
+    plt.plot(month_data['Month'], month_data['TotalDepDelay'], 
+             color=colors[i], label=f"Month {month}", linestyle='-', marker='o')
+
+# Thêm đường ngang tại giá trị 0
+plt.axhline(0, color='gray', linewidth=1, linestyle='--')
+
+# Thiết lập tiêu đề, nhãn và chú thích
+plt.title("Departure Delays by Month (Converted to Hours)", fontsize=15)
+plt.xlabel("Month", fontsize=12)
+plt.ylabel("Total Departure Delay (Hours)", fontsize=12)
+plt.legend(title="Months", loc='upper right')
+
+# Hiển thị biểu đồ
+plt.show()
